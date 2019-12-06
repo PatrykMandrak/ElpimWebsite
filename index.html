@@ -56,7 +56,50 @@
 
     <link rel="stylesheet" id="contact-form-7-css" href="http://lorien.pl/wp-content/plugins/contact-form-7/includes/css/styles.css?ver=5.0.2" type="text/css" media="all">
     <link rel="stylesheet" id="wpml-menu-item-0-css" href="//lorien.pl/wp-content/plugins/sitepress-multilingual-cms/templates/language-switchers/menu-item/style.css?ver=1" type="text/css" media="all">
-    <script type="text/javascript" src="http://lorien.pl/wp-includes/js/jquery/jquery.js?ver=1.12.4"></script>
+    <script type="text/javascript" src="http://lorien.pl/wp-includes/js/jquery/jquery.js?ver=1.12.4"></script><script data-dapp-detection="">
+    (function() {
+        let alreadyInsertedMetaTag = false
+
+        function __insertDappDetected() {
+            if (!alreadyInsertedMetaTag) {
+                const meta = document.createElement('meta')
+                meta.name = 'dapp-detected'
+                document.head.appendChild(meta)
+                alreadyInsertedMetaTag = true
+            }
+        }
+
+        if (window.hasOwnProperty('web3')) {
+            // Note a closure can't be used for this var because some sites like
+            // www.wnyc.org do a second script execution via eval for some reason.
+            window.__disableDappDetectionInsertion = true
+            // Likely oldWeb3 is undefined and it has a property only because
+            // we defined it. Some sites like wnyc.org are evaling all scripts
+            // that exist again, so this is protection against multiple calls.
+            if (window.web3 === undefined) {
+                return
+            }
+            if (!window.web3.currentProvider ||
+                !window.web3.currentProvider.isMetaMask) {
+                __insertDappDetected()
+            }
+        } else {
+            var oldWeb3 = window.web3
+            Object.defineProperty(window, 'web3', {
+                configurable: true,
+                set: function (val) {
+                    if (!window.__disableDappDetectionInsertion)
+                        __insertDappDetected()
+                    oldWeb3 = val
+                },
+                get: function () {
+                    if (!window.__disableDappDetectionInsertion)
+                        __insertDappDetected()
+                    return oldWeb3
+                }
+            })
+        }
+    })()</script>
     <script type="text/javascript" src="http://lorien.pl/wp-includes/js/jquery/jquery-migrate.min.js?ver=1.4.1"></script>
     <link rel="https://api.w.org/" href="http://lorien.pl/wp-json/">
     <link rel="EditURI" type="application/rsd+xml" title="RSD" href="http://lorien.pl/xmlrpc.php?rsd">
@@ -130,6 +173,7 @@
             <div class="flex flex--space flex--vcenter">
                 <a href="http://lorien.pl/" class="logo" title="Lorien Group">
                     <img src="Resources/Images/logo256.png">
+                    <img src="Resources/Images/elpim92.png">
                 </a>
                 <nav class="jsNav">
                     <div class="hamburger">
@@ -348,7 +392,7 @@
                         <div class="field field--submit">
                             <span class="wpcf7-form-control-wrap text-549"><input type="text" name="text-549" value="" size="40" class="wpcf7-form-control wpcf7-text hidden" id="url" aria-invalid="false"></span><br>
                             <span class="wpcf7-form-control-wrap text-278"><input type="text" name="text-278" value="" size="40" class="wpcf7-form-control wpcf7-text hidden" id="jsId" aria-invalid="false"></span><br>
-                            <input type="submit" value="Chcę otrzymać katalog!" class="wpcf7-form-control wpcf7-submit"><span class="ajax-loader"></span><span class="ajax-loader"></span>
+                            <input type="submit" value="Chcę otrzymać katalog!" class="wpcf7-form-control wpcf7-submit"><span class="ajax-loader"></span><span class="ajax-loader"></span><span class="ajax-loader"></span>
                         </div>
                         <div class="wpcf7-response-output wpcf7-display-none"></div></form></div>              </div>
         </div>

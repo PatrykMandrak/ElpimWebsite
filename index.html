@@ -211,7 +211,7 @@
     <header class="header--small">
         <div class="wrapper">
             <div class="flex flex--space flex--vcenter">
-                <a href="http://lorien.pl/" class="logo" title="Lorien Group">
+                <a href="#" onclick="smoothScroll(document.getElementById('start'))" class="logo" title="Lorien Group">
                     <img src="Resources/Images/logo256.png">
                     <img src="Resources/Images/elpim92.png">
                 </a>
@@ -224,10 +224,10 @@
                     <ul class="no--dots flex flex--vcenter flex--hcenter">
 
 
-                        <li id="menu-item-21" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-21"><a href="http://lorien.pl/obszary-dzialalnosci/">Obszary działalności</a></li>
-                        <li id="menu-item-20" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-20"><a href="http://lorien.pl/o-nas/">O nas</a></li>
-                        <li id="menu-item-748" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-748"><a href="http://lorien.pl/baza-wiedzy/">WSPÓŁPRACA</a></li>
-                        <li id="menu-item-19" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-19"><a href="http://lorien.pl/kontakt/">Kontakt</a></li>
+                        <li id="menu-item-21" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-21"><a href="#" onclick="smoothScroll(document.getElementById('areasOfWork'))">Obszary działalności</a></li>
+                        <li id="menu-item-20" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-20"><a href="#" onclick="smoothScroll(document.getElementById('about'))">O nas</a></li>
+                        <li id="menu-item-748" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-748"><a href="#" onclick="smoothScroll(document.getElementById('mail'))">WSPÓŁPRACA</a></li>
+                        <li id="menu-item-19" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-19"><a href="#" onclick="smoothScroll(document.getElementById('contact'))">Kontakt</a></li>
 
 
                     </ul>
@@ -248,7 +248,7 @@
 
 
 
-    <section class="section section--img--text no--padding h--auto">
+    <section id="start" class="section section--img--text no--padding h--auto">
         <div class="wrapper rel">
 
         </div>
@@ -266,9 +266,9 @@
         </div>
     </section>
 
-    <section class="section areas">
+    <section id="areasOfWork" class="section areas">
         <div class="wrapper">
-            <h2 class="h1 h1--padding">Obszary działalności</h2>
+            <h2 id="areasOfWork" class="h1 h1--padding">Obszary działalności</h2>
 
             <div class="boxes flex flex--row flex--hcenter">
                 <a title="Projektowanie" class="box bg--lightgray overlay rel">
@@ -319,7 +319,7 @@
 
 
 
-    <section class="section section--img--text no--padding h--auto">
+    <section id="contact" class="section section--img--text no--padding h--auto">
 
 
         <div class="wrapper">
@@ -356,7 +356,7 @@
 
 
     </section>
-    <section class="section form">
+    <section id="mail" class="section form">
         <div class="wrapper">
             <div class="inner">
                 <span class="icon"><svg width="109" height="135" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 81.8 102"><path d="M73 102H8.8C4 102 0 98 0 93.2V8.8C0 4 4 0 8.8 0h64.4c4.8 0 8.7 4 8.7 8.8v84.4c-.1 4.8-4 8.8-8.9 8.8zM8.8 2C5.1 2 2 5.1 2 8.8v84.4C2 97 5.1 100 8.8 100H73c3.8 0 6.8-3.1 6.8-6.8V8.8c0-3.8-3-6.8-6.7-6.8H8.8z"></path><circle cx="40.9" cy="92.3" r="2.3"></circle><path d="M71.8 84H10.1V10h61.7v74zm-59.7-2h57.7V12H12.1v70z"></path><path d="M19.7 22.5h42.5v2H19.7zm0 11.9h42.5v2H19.7zm0 11.8h42.5v2H19.7zm0 11.9h42.5v2H19.7zm0 11.9h42.5v2H19.7z"></path></svg></span>
@@ -397,7 +397,7 @@
                         <div class="wpcf7-response-output wpcf7-display-none"></div></form></div>                         </div>
         </div>
     </section>
-    <section class="section section--img--text no--padding h--auto">
+    <section id="about" class="section section--img--text no--padding h--auto">
         <div class="wrapper rel">
 
         </div>
@@ -486,13 +486,11 @@
     var wpcf7 = {"apiSettings":{"root":"http:\/\/lorien.pl\/wp-json\/contact-form-7\/v1","namespace":"contact-form-7\/v1"},"recaptcha":{"messages":{"empty":"Potwierd\u017a, \u017ce nie jeste\u015b robotem."}}};
     /* ]]> */
 </script>
-<script type="text/javascript" src="http://lorien.pl/wp-content/plugins/contact-form-7/includes/js/scripts.js?ver=5.0.2"></script>
 <script type="text/javascript">
     /* <![CDATA[ */
     var BJLL_options = {"threshold":"100"};
     /* ]]> */
 </script>
-<script type="text/javascript" src="http://lorien.pl/wp-content/plugins/bj-lazy-load/js/bj-lazy-load.min.js?ver=2"></script>
-<script type="text/javascript" src="http://lorien.pl/wp-includes/js/wp-embed.min.js?ver=4.9.12"></script>
+<script type="text/javascript" src="Resources/JavaScript/core.js"></script>
 
 <com-1password-button></com-1password-button></body></html>

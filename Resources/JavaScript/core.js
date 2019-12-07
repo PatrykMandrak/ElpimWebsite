@@ -535,6 +535,10 @@
 
 // Smooth scrolling
 window.smoothScroll = function(target) {
+    let navBar = document.getElementById("navBar");
+    if(navBar.className == "jsNav active") navBar.className = "jsNav";
+
+
     var scrollContainer = target;
     do { //find scroll container
         scrollContainer = scrollContainer.parentNode;

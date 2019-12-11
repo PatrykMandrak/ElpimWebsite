@@ -536,7 +536,7 @@
 // Smooth scrolling
 window.smoothScroll = function(target) {
     let navBar = document.getElementById("navBar");
-    if(navBar.className == "jsNav active") navBar.className = "jsNav";
+    if(navBar.className === "jsNav active") navBar.className = "jsNav";
 
 
     var scrollContainer = target;
@@ -544,13 +544,13 @@ window.smoothScroll = function(target) {
         scrollContainer = scrollContainer.parentNode;
         if (!scrollContainer) return;
         scrollContainer.scrollTop += 1;
-    } while (scrollContainer.scrollTop == 0);
+    } while (scrollContainer.scrollTop === 0);
 
     var targetY = 0 - 100;
     do { //find the top of target relatively to the container
-        if (target == scrollContainer) break;
+        if (target === scrollContainer) break;
         targetY += target.offsetTop;
-    } while (target = target.offsetParent);
+    } while (target === target.offsetParent);
 
     scroll = function(c, a, b, i) {
         i++; if (i > 30) return;

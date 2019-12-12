@@ -560,3 +560,27 @@ window.smoothScroll = function(target) {
     // start scrolling
     scroll(scrollContainer, scrollContainer.scrollTop, targetY, 0);
 };
+
+window.addEventListener("load",function() {
+    document.getElementById('mail-form').addEventListener("submit",function(e) {
+        e.preventDefault(); // before the code
+        let fullName = document.getElementById('name').value;
+        let mail = document.getElementById('email').value;
+        let text = document.getElementById('text').value;
+
+        console.log(fullName);
+        console.log(mail);
+        console.log(text);
+
+        Email.send({
+            SecureToken : "dc7492ef-00e4-4b05-baaf-cde9e521c4e3",
+            To : "automatycznymailelpim@o2.pl", // mail,
+            From : "automatycznymailelpim@o2.pl",
+            Subject : "Mail od uzytkownika strony elpim.pl",
+            Body : fullName + ": " + text
+        }).then(
+            message => alert(message)
+        );
+
+    });
+});

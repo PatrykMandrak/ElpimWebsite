@@ -1,514 +1,3 @@
-( function( $ ) {
-
-    'use strict';
-
-    if ( typeof wpcf7 === 'undefined' || wpcf7 === null ) {
-        return;
-    }
-
-    wpcf7 = $.extend( {
-        cached: 0,
-        inputs: []
-    }, wpcf7 );
-
-    $( function() {
-        wpcf7.supportHtml5 = ( function() {
-            var features = {};
-            var input = document.createElement( 'input' );
-
-            features.placeholder = 'placeholder' in input;
-
-            var inputTypes = [ 'email', 'url', 'tel', 'number', 'range', 'date' ];
-
-            $.each( inputTypes, function( index, value ) {
-                input.setAttribute( 'type', value );
-                features[ value ] = input.type !== 'text';
-            } );
-
-            return features;
-        } )();
-
-        $( 'div.wpcf7 > form' ).each( function() {
-            var $form = $( this );
-            wpcf7.initForm( $form );
-
-            if ( wpcf7.cached ) {
-                wpcf7.refill( $form );
-            }
-        } );
-    } );
-
-    wpcf7.getId = function( form ) {
-        return parseInt( $( 'input[name="_wpcf7"]', form ).val(), 10 );
-    };
-
-    wpcf7.initForm = function( form ) {
-        var $form = $( form );
-
-        $form.submit( function( event ) {
-            if ( typeof window.FormData !== 'function' ) {
-                return;
-            }
-
-            wpcf7.submit( $form );
-            event.preventDefault();
-        } );
-
-        $( '.wpcf7-submit', $form ).after( '<span class="ajax-loader"></span>' );
-
-        wpcf7.toggleSubmit( $form );
-
-        $form.on( 'click', '.wpcf7-acceptance', function() {
-            wpcf7.toggleSubmit( $form );
-        } );
-
-        // Exclusive Checkbox
-        $( '.wpcf7-exclusive-checkbox', $form ).on( 'click', 'input:checkbox', function() {
-            var name = $( this ).attr( 'name' );
-            $form.find( 'input:checkbox[name="' + name + '"]' ).not( this ).prop( 'checked', false );
-        } );
-
-        // Free Text Option for Checkboxes and Radio Buttons
-        $( '.wpcf7-list-item.has-free-text', $form ).each( function() {
-            var $freetext = $( ':input.wpcf7-free-text', this );
-            var $wrap = $( this ).closest( '.wpcf7-form-control' );
-
-            if ( $( ':checkbox, :radio', this ).is( ':checked' ) ) {
-                $freetext.prop( 'disabled', false );
-            } else {
-                $freetext.prop( 'disabled', true );
-            }
-
-            $wrap.on( 'change', ':checkbox, :radio', function() {
-                var $cb = $( '.has-free-text', $wrap ).find( ':checkbox, :radio' );
-
-                if ( $cb.is( ':checked' ) ) {
-                    $freetext.prop( 'disabled', false ).focus();
-                } else {
-                    $freetext.prop( 'disabled', true );
-                }
-            } );
-        } );
-
-        // Placeholder Fallback
-        if ( ! wpcf7.supportHtml5.placeholder ) {
-            $( '[placeholder]', $form ).each( function() {
-                $( this ).val( $( this ).attr( 'placeholder' ) );
-                $( this ).addClass( 'placeheld' );
-
-                $( this ).focus( function() {
-                    if ( $( this ).hasClass( 'placeheld' ) ) {
-                        $( this ).val( '' ).removeClass( 'placeheld' );
-                    }
-                } );
-
-                $( this ).blur( function() {
-                    if ( '' === $( this ).val() ) {
-                        $( this ).val( $( this ).attr( 'placeholder' ) );
-                        $( this ).addClass( 'placeheld' );
-                    }
-                } );
-            } );
-        }
-
-        if ( wpcf7.jqueryUi && ! wpcf7.supportHtml5.date ) {
-            $form.find( 'input.wpcf7-date[type="date"]' ).each( function() {
-                $( this ).datepicker( {
-                    dateFormat: 'yy-mm-dd',
-                    minDate: new Date( $( this ).attr( 'min' ) ),
-                    maxDate: new Date( $( this ).attr( 'max' ) )
-                } );
-            } );
-        }
-
-        if ( wpcf7.jqueryUi && ! wpcf7.supportHtml5.number ) {
-            $form.find( 'input.wpcf7-number[type="number"]' ).each( function() {
-                $( this ).spinner( {
-                    min: $( this ).attr( 'min' ),
-                    max: $( this ).attr( 'max' ),
-                    step: $( this ).attr( 'step' )
-                } );
-            } );
-        }
-
-        // Character Count
-        $( '.wpcf7-character-count', $form ).each( function() {
-            var $count = $( this );
-            var name = $count.attr( 'data-target-name' );
-            var down = $count.hasClass( 'down' );
-            var starting = parseInt( $count.attr( 'data-starting-value' ), 10 );
-            var maximum = parseInt( $count.attr( 'data-maximum-value' ), 10 );
-            var minimum = parseInt( $count.attr( 'data-minimum-value' ), 10 );
-
-            var updateCount = function( target ) {
-                var $target = $( target );
-                var length = $target.val().length;
-                var count = down ? starting - length : length;
-                $count.attr( 'data-current-value', count );
-                $count.text( count );
-
-                if ( maximum && maximum < length ) {
-                    $count.addClass( 'too-long' );
-                } else {
-                    $count.removeClass( 'too-long' );
-                }
-
-                if ( minimum && length < minimum ) {
-                    $count.addClass( 'too-short' );
-                } else {
-                    $count.removeClass( 'too-short' );
-                }
-            };
-
-            $( ':input[name="' + name + '"]', $form ).each( function() {
-                updateCount( this );
-
-                $( this ).keyup( function() {
-                    updateCount( this );
-                } );
-            } );
-        } );
-
-        // URL Input Correction
-        $form.on( 'change', '.wpcf7-validates-as-url', function() {
-            var val = $.trim( $( this ).val() );
-
-            if ( val
-                && ! val.match( /^[a-z][a-z0-9.+-]*:/i )
-                && -1 !== val.indexOf( '.' ) ) {
-                val = val.replace( /^\/+/, '' );
-                val = 'http://' + val;
-            }
-
-            $( this ).val( val );
-        } );
-    };
-
-    wpcf7.submit = function( form ) {
-        if ( typeof window.FormData !== 'function' ) {
-            return;
-        }
-
-        var $form = $( form );
-
-        $( '.ajax-loader', $form ).addClass( 'is-active' );
-
-        $( '[placeholder].placeheld', $form ).each( function( i, n ) {
-            $( n ).val( '' );
-        } );
-
-        wpcf7.clearResponse( $form );
-
-        var formData = new FormData( $form.get( 0 ) );
-
-        var detail = {
-            id: $form.closest( 'div.wpcf7' ).attr( 'id' ),
-            status: 'init',
-            inputs: [],
-            formData: formData
-        };
-
-        $.each( $form.serializeArray(), function( i, field ) {
-            if ( '_wpcf7' == field.name ) {
-                detail.contactFormId = field.value;
-            } else if ( '_wpcf7_version' == field.name ) {
-                detail.pluginVersion = field.value;
-            } else if ( '_wpcf7_locale' == field.name ) {
-                detail.contactFormLocale = field.value;
-            } else if ( '_wpcf7_unit_tag' == field.name ) {
-                detail.unitTag = field.value;
-            } else if ( '_wpcf7_container_post' == field.name ) {
-                detail.containerPostId = field.value;
-            } else if ( field.name.match( /^_wpcf7_\w+_free_text_/ ) ) {
-                var owner = field.name.replace( /^_wpcf7_\w+_free_text_/, '' );
-                detail.inputs.push( {
-                    name: owner + '-free-text',
-                    value: field.value
-                } );
-            } else if ( field.name.match( /^_/ ) ) {
-                // do nothing
-            } else {
-                detail.inputs.push( field );
-            }
-        } );
-
-        wpcf7.triggerEvent( $form.closest( 'div.wpcf7' ), 'beforesubmit', detail );
-
-        var ajaxSuccess = function( data, status, xhr, $form ) {
-            detail.id = $( data.into ).attr( 'id' );
-            detail.status = data.status;
-            detail.apiResponse = data;
-
-            var $message = $( '.wpcf7-response-output', $form );
-
-            switch ( data.status ) {
-                case 'validation_failed':
-                    $.each( data.invalidFields, function( i, n ) {
-                        $( n.into, $form ).each( function() {
-                            wpcf7.notValidTip( this, n.message );
-                            $( '.wpcf7-form-control', this ).addClass( 'wpcf7-not-valid' );
-                            $( '[aria-invalid]', this ).attr( 'aria-invalid', 'true' );
-                        } );
-                    } );
-
-                    $message.addClass( 'wpcf7-validation-errors' );
-                    $form.addClass( 'invalid' );
-
-                    wpcf7.triggerEvent( data.into, 'invalid', detail );
-                    break;
-                case 'acceptance_missing':
-                    $message.addClass( 'wpcf7-acceptance-missing' );
-                    $form.addClass( 'unaccepted' );
-
-                    wpcf7.triggerEvent( data.into, 'unaccepted', detail );
-                    break;
-                case 'spam':
-                    $message.addClass( 'wpcf7-spam-blocked' );
-                    $form.addClass( 'spam' );
-
-                    $( '[name="g-recaptcha-response"]', $form ).each( function() {
-                        if ( '' === $( this ).val() ) {
-                            var $recaptcha = $( this ).closest( '.wpcf7-form-control-wrap' );
-                            wpcf7.notValidTip( $recaptcha, wpcf7.recaptcha.messages.empty );
-                        }
-                    } );
-
-                    wpcf7.triggerEvent( data.into, 'spam', detail );
-                    break;
-                case 'aborted':
-                    $message.addClass( 'wpcf7-aborted' );
-                    $form.addClass( 'aborted' );
-
-                    wpcf7.triggerEvent( data.into, 'aborted', detail );
-                    break;
-                case 'mail_sent':
-                    $message.addClass( 'wpcf7-mail-sent-ok' );
-                    $form.addClass( 'sent' );
-
-                    wpcf7.triggerEvent( data.into, 'mailsent', detail );
-                    break;
-                case 'mail_failed':
-                    $message.addClass( 'wpcf7-mail-sent-ng' );
-                    $form.addClass( 'failed' );
-
-                    wpcf7.triggerEvent( data.into, 'mailfailed', detail );
-                    break;
-                default:
-                    var customStatusClass = 'custom-'
-                        + data.status.replace( /[^0-9a-z]+/i, '-' );
-                    $message.addClass( 'wpcf7-' + customStatusClass );
-                    $form.addClass( customStatusClass );
-            }
-
-            wpcf7.refill( $form, data );
-
-            wpcf7.triggerEvent( data.into, 'submit', detail );
-
-            if ( 'mail_sent' == data.status ) {
-                $form.each( function() {
-                    this.reset();
-                } );
-
-                wpcf7.toggleSubmit( $form );
-            }
-
-            $form.find( '[placeholder].placeheld' ).each( function( i, n ) {
-                $( n ).val( $( n ).attr( 'placeholder' ) );
-            } );
-
-            $message.html( '' ).append( data.message ).slideDown( 'fast' );
-            $message.attr( 'role', 'alert' );
-
-            $( '.screen-reader-response', $form.closest( '.wpcf7' ) ).each( function() {
-                var $response = $( this );
-                $response.html( '' ).attr( 'role', '' ).append( data.message );
-
-                if ( data.invalidFields ) {
-                    var $invalids = $( '<ul></ul>' );
-
-                    $.each( data.invalidFields, function( i, n ) {
-                        if ( n.idref ) {
-                            var $li = $( '<li></li>' ).append( $( '<a></a>' ).attr( 'href', '#' + n.idref ).append( n.message ) );
-                        } else {
-                            var $li = $( '<li></li>' ).append( n.message );
-                        }
-
-                        $invalids.append( $li );
-                    } );
-
-                    $response.append( $invalids );
-                }
-
-                $response.attr( 'role', 'alert' ).focus();
-            } );
-        };
-
-        $.ajax( {
-            type: 'POST',
-            url: wpcf7.apiSettings.getRoute(
-                '/contact-forms/' + wpcf7.getId( $form ) + '/feedback' ),
-            data: formData,
-            dataType: 'json',
-            processData: false,
-            contentType: false
-        } ).done( function( data, status, xhr ) {
-            ajaxSuccess( data, status, xhr, $form );
-            $( '.ajax-loader', $form ).removeClass( 'is-active' );
-        } ).fail( function( xhr, status, error ) {
-            var $e = $( '<div class="ajax-error"></div>' ).text( error.message );
-            $form.after( $e );
-        } );
-    };
-
-    wpcf7.triggerEvent = function( target, name, detail ) {
-        var $target = $( target );
-
-        /* DOM event */
-        var event = new CustomEvent( 'wpcf7' + name, {
-            bubbles: true,
-            detail: detail
-        } );
-
-        $target.get( 0 ).dispatchEvent( event );
-
-        /* jQuery event */
-        $target.trigger( 'wpcf7:' + name, detail );
-        $target.trigger( name + '.wpcf7', detail ); // deprecated
-    };
-
-    wpcf7.toggleSubmit = function( form, state ) {
-        var $form = $( form );
-        var $submit = $( 'input:submit', $form );
-
-        if ( typeof state !== 'undefined' ) {
-            $submit.prop( 'disabled', ! state );
-            return;
-        }
-
-        if ( $form.hasClass( 'wpcf7-acceptance-as-validation' ) ) {
-            return;
-        }
-
-        $submit.prop( 'disabled', false );
-
-        $( '.wpcf7-acceptance', $form ).each( function() {
-            var $span = $( this );
-            var $input = $( 'input:checkbox', $span );
-
-            if ( ! $span.hasClass( 'optional' ) ) {
-                if ( $span.hasClass( 'invert' ) && $input.is( ':checked' )
-                    || ! $span.hasClass( 'invert' ) && ! $input.is( ':checked' ) ) {
-                    $submit.prop( 'disabled', true );
-                    return false;
-                }
-            }
-        } );
-    };
-
-    wpcf7.notValidTip = function( target, message ) {
-        var $target = $( target );
-        $( '.wpcf7-not-valid-tip', $target ).remove();
-        $( '<span role="alert" class="wpcf7-not-valid-tip"></span>' )
-            .text( message ).appendTo( $target );
-
-        if ( $target.is( '.use-floating-validation-tip *' ) ) {
-            var fadeOut = function( target ) {
-                $( target ).not( ':hidden' ).animate( {
-                    opacity: 0
-                }, 'fast', function() {
-                    $( this ).css( { 'z-index': -100 } );
-                } );
-            };
-
-            $target.on( 'mouseover', '.wpcf7-not-valid-tip', function() {
-                fadeOut( this );
-            } );
-
-            $target.on( 'focus', ':input', function() {
-                fadeOut( $( '.wpcf7-not-valid-tip', $target ) );
-            } );
-        }
-    };
-
-    wpcf7.refill = function( form, data ) {
-        var $form = $( form );
-
-        var refillCaptcha = function( $form, items ) {
-            $.each( items, function( i, n ) {
-                $form.find( ':input[name="' + i + '"]' ).val( '' );
-                $form.find( 'img.wpcf7-captcha-' + i ).attr( 'src', n );
-                var match = /([0-9]+)\.(png|gif|jpeg)$/.exec( n );
-                $form.find( 'input:hidden[name="_wpcf7_captcha_challenge_' + i + '"]' ).attr( 'value', match[ 1 ] );
-            } );
-        };
-
-        var refillQuiz = function( $form, items ) {
-            $.each( items, function( i, n ) {
-                $form.find( ':input[name="' + i + '"]' ).val( '' );
-                $form.find( ':input[name="' + i + '"]' ).siblings( 'span.wpcf7-quiz-label' ).text( n[ 0 ] );
-                $form.find( 'input:hidden[name="_wpcf7_quiz_answer_' + i + '"]' ).attr( 'value', n[ 1 ] );
-            } );
-        };
-
-        if ( typeof data === 'undefined' ) {
-            $.ajax( {
-                type: 'GET',
-                url: wpcf7.apiSettings.getRoute(
-                    '/contact-forms/' + wpcf7.getId( $form ) + '/refill' ),
-                beforeSend: function( xhr ) {
-                    var nonce = $form.find( ':input[name="_wpnonce"]' ).val();
-
-                    if ( nonce ) {
-                        xhr.setRequestHeader( 'X-WP-Nonce', nonce );
-                    }
-                },
-                dataType: 'json'
-            } ).done( function( data, status, xhr ) {
-                if ( data.captcha ) {
-                    refillCaptcha( $form, data.captcha );
-                }
-
-                if ( data.quiz ) {
-                    refillQuiz( $form, data.quiz );
-                }
-            } );
-
-        } else {
-            if ( data.captcha ) {
-                refillCaptcha( $form, data.captcha );
-            }
-
-            if ( data.quiz ) {
-                refillQuiz( $form, data.quiz );
-            }
-        }
-    };
-
-    wpcf7.clearResponse = function( form ) {
-        var $form = $( form );
-        $form.removeClass( 'invalid spam sent failed' );
-        $form.siblings( '.screen-reader-response' ).html( '' ).attr( 'role', '' );
-
-        $( '.wpcf7-not-valid-tip', $form ).remove();
-        $( '[aria-invalid]', $form ).attr( 'aria-invalid', 'false' );
-        $( '.wpcf7-form-control', $form ).removeClass( 'wpcf7-not-valid' );
-
-        $( '.wpcf7-response-output', $form )
-            .hide().empty().removeAttr( 'role' )
-            .removeClass( 'wpcf7-mail-sent-ok wpcf7-mail-sent-ng wpcf7-validation-errors wpcf7-spam-blocked' );
-    };
-
-    wpcf7.apiSettings.getRoute = function( path ) {
-        var url = wpcf7.apiSettings.root;
-
-        url = url.replace(
-            wpcf7.apiSettings.namespace,
-            wpcf7.apiSettings.namespace + path );
-
-        return url;
-    };
-
-} )( jQuery );
 
 /*
  * Polyfill for Internet Explorer
@@ -561,25 +50,241 @@ window.smoothScroll = function(target) {
     scroll(scrollContainer, scrollContainer.scrollTop, targetY, 0);
 };
 
+function turnOnLoadingSpinner() {
+    let elements = document.getElementsByClassName("ajax-loader");
+    for(let i = elements.length - 1; i >= 0; --i)
+    {
+        elements[i].className = "ajax-loader is-active";
+    }
+};
+
+function turnOffLoadingSpinner() {
+    let elements = document.getElementsByClassName("ajax-loader is-active");
+    for(let i = elements.length - 1; i >= 0; --i)
+    {
+        elements[i].className = "ajax-loader";
+    }
+};
+
+function validateEmail(email) {
+    let re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+    return re.test(String(email).toLowerCase());
+};
+
 window.addEventListener("load",function() {
     document.getElementById('mail-form').addEventListener("submit",function(e) {
         e.preventDefault(); // before the code
+        turnOnLoadingSpinner();
         let fullName = document.getElementById('name').value;
         let mail = document.getElementById('email').value;
         let text = document.getElementById('text').value;
 
-        console.log(fullName);
-        console.log(mail);
-        console.log(text);
+        if(fullName.length <= 0 || mail.length <= 0 || text.length <= 0) {
+            turnOffLoadingSpinner();
+            alert("Prosze wypelnic wszystkie pola");
+            return;
+        }
 
+        if(!validateEmail(mail)) {
+            turnOffLoadingSpinner();
+            alert("Podano nie prawidlowy email");
+            return;
+        }
+
+        let body_data = `
+            <!doctype html>
+            <html><head>
+                <meta name="viewport" content="width=device-width">
+                <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+                <title>Simple Transactional Email</title>
+                <style>
+            @media only screen and (max-width: 620px) {
+              table[class=body] h1 {
+                font-size: 28px !important;
+                margin-bottom: 10px !important;
+              }
+            
+              table[class=body] p,
+            table[class=body] ul,
+            table[class=body] ol,
+            table[class=body] td,
+            table[class=body] span,
+            table[class=body] a {
+                font-size: 16px !important;
+              }
+            
+              table[class=body] .wrapper,
+            table[class=body] .article {
+                padding: 10px !important;
+              }
+            
+              table[class=body] .content {
+                padding: 0 !important;
+              }
+            
+              table[class=body] .container {
+                padding: 0 !important;
+                width: 100% !important;
+              }
+            
+              table[class=body] .main {
+                border-left-width: 0 !important;
+                border-radius: 0 !important;
+                border-right-width: 0 !important;
+              }
+            
+              table[class=body] .btn table {
+                width: 100% !important;
+              }
+            
+              table[class=body] .btn a {
+                width: 100% !important;
+              }
+            
+              table[class=body] .img-responsive {
+                height: auto !important;
+                max-width: 100% !important;
+                width: auto !important;
+              }
+            }
+            @media all {
+              .ExternalClass {
+                width: 100%;
+              }
+            
+              .ExternalClass,
+            .ExternalClass p,
+            .ExternalClass span,
+            .ExternalClass font,
+            .ExternalClass td,
+            .ExternalClass div {
+                line-height: 100%;
+              }
+            
+              .apple-link a {
+                color: inherit !important;
+                font-family: inherit !important;
+                font-size: inherit !important;
+                font-weight: inherit !important;
+                line-height: inherit !important;
+                text-decoration: none !important;
+              }
+            
+              #MessageViewBody a {
+                color: inherit;
+                text-decoration: none;
+                font-size: inherit;
+                font-family: inherit;
+                font-weight: inherit;
+                line-height: inherit;
+              }
+            
+              .btn-primary table td:hover {
+                background-color: #34495e !important;
+              }
+            
+              .btn-primary a:hover {
+                background-color: #34495e !important;
+                border-color: #34495e !important;
+              }
+            }
+            </style>
+              </head>
+              <body class="" style="background-color: #f6f6f6; font-family: sans-serif; -webkit-font-smoothing: antialiased; font-size: 14px; line-height: 1.4; margin: 0; padding: 0; -ms-text-size-adjust: 100%; -webkit-text-size-adjust: 100%;">
+                <span class="preheader" style="color: transparent; display: none; height: 0; max-height: 0; max-width: 0; opacity: 0; overflow: hidden; mso-hide: all; visibility: hidden; width: 0;">Mail od uzytkownika strony internetowej elpim.pl</span>
+                <table role="presentation" border="0" cellpadding="0" cellspacing="0" class="body" style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; background-color: #f6f6f6; width: 100%;" width="100%" bgcolor="#f6f6f6">
+                  <tbody><tr>
+                    <td style="font-family: sans-serif; font-size: 14px; vertical-align: top;" valign="top">&nbsp;</td>
+                    <td class="container" style="font-family: sans-serif; font-size: 14px; vertical-align: top; display: block; max-width: 580px; padding: 10px; width: 580px; margin: 0 auto;" width="580" valign="top">
+                      <div class="content" style="box-sizing: border-box; display: block; margin: 0 auto; max-width: 580px; padding: 10px;">
+            
+                        <!-- START CENTERED WHITE CONTAINER -->
+                        <table role="presentation" class="main" style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; background: #ffffff; border-radius: 3px; width: 100%;" width="100%">
+            
+                          <!-- START MAIN CONTENT AREA -->
+                          <tbody><tr>
+                            <td class="wrapper" style="font-family: sans-serif; font-size: 14px; vertical-align: top; box-sizing: border-box; padding: 20px;" valign="top">
+                              <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; width: 100%;" width="100%">
+                                <tbody><tr>
+                                  <td style="font-family: sans-serif; font-size: 14px; vertical-align: top;" valign="top">
+                                    <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">Otrzymano nowa wiadomosc ze strony elpim.pl</p>
+                                    <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">Uzytkownik strony internetowej elpim.pl wypelnil formularz kontaktowy nastepujacymi informacjami:</p>
+                                    <table role="presentation" border="0" cellpadding="0" cellspacing="0" class="btn btn-primary" style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; box-sizing: border-box; width: 100%;" width="100%">
+                                      <tbody>
+                                        <tr>
+                                          <td align="left" style="font-family: sans-serif; font-size: 14px; vertical-align: top; padding-bottom: 15px;" valign="top">
+                                            <blockquote cite="https://www.huxley.net/bnw/four.html" style="margin: 0;">
+                                                <footer>Podane imie:</footer>
+                                                <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px; padding: 15px; background: #eee; border-radius: 5px;">${fullName}</p>
+                                                </blockquote><blockquote cite="https://www.huxley.net/bnw/four.html" style="margin: 0;">
+                                                <footer>Podany email:</footer>
+                                                <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px; padding: 15px; background: #eee; border-radius: 5px;">${mail}</p>
+                                                </blockquote><blockquote cite="https://www.huxley.net/bnw/four.html" style="margin: 0;">
+                                                <footer>Tresc wiadmosci:</footer>
+                                                <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px; padding: 15px; background: #eee; border-radius: 5px;">${text}</p>
+                                            </blockquote>
+                                            <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; width: auto;">
+                                                <tbody>
+                                                </tbody>
+                                            </table>
+                                          </td>
+                                        </tr>
+                                      </tbody>
+                                    </table>
+                                    <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">Ta wiadomosc jest tylko przekazaniem podanych informacji podanych przez uzytkownika.</p>
+                                    <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">Prosze odpowiadac na podany mail przez wysylajacego.</p>
+                                  </td>
+                                </tr>
+                              </tbody></table>
+                            </td>
+                          </tr>
+                        <!-- END MAIN CONTENT AREA -->
+                        </tbody></table>
+                        <!-- END CENTERED WHITE CONTAINER -->
+            
+                        <!-- START FOOTER -->
+                        <div class="footer" style="clear: both; margin-top: 10px; text-align: center; width: 100%;">
+                          <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; width: 100%;" width="100%">
+                            <tbody><tr>
+                              <td class="content-block" style="font-family: sans-serif; vertical-align: top; padding-bottom: 10px; padding-top: 10px; color: #999999; font-size: 12px; text-align: center;" valign="top" align="center">
+                                Wszystkie informacje podane przez wysylajacego moga byc falszwe
+                              </td>
+                            </tr>
+                            <tr>
+                              <td class="content-block powered-by" style="font-family: sans-serif; vertical-align: top; padding-bottom: 10px; padding-top: 10px; color: #999999; font-size: 12px; text-align: center;" valign="top" align="center">
+                                Email automatyczny
+                              </td>
+                            </tr>
+                          </tbody></table>
+                        </div>
+                        <!-- END FOOTER -->
+            
+                      </div>
+                    </td>
+                    <td style="font-family: sans-serif; font-size: 14px; vertical-align: top;" valign="top">&nbsp;</td>
+                  </tr>
+                </tbody></table>
+            </body></html>
+        `;
         Email.send({
             SecureToken : "dc7492ef-00e4-4b05-baaf-cde9e521c4e3",
-            To : "automatycznymailelpim@o2.pl", // mail,
+            To : "automatycznymailelpim@o2.pl", // Replace with elpim company email later,
             From : "automatycznymailelpim@o2.pl",
             Subject : "Mail od uzytkownika strony elpim.pl",
-            Body : fullName + ": " + text
+            Body : body_data
         }).then(
-            message => alert(message)
+            message => {
+                turnOffLoadingSpinner();
+                if(message === 'OK') {
+                    document.getElementById('name').value = "";
+                    document.getElementById('email').value = "";
+                    document.getElementById('text').value = "";
+                    alert("Wiadomosc wyslana!");
+                }
+                else {
+                    alert("Podczas wysylania wiadomosci nastapil blad:\n" + message);
+                }
+            }
         );
 
     });

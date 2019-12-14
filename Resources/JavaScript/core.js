@@ -231,7 +231,7 @@ window.addEventListener("load",function() {
                                         </tr>
                                       </tbody>
                                     </table>
-                                    <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">Ta wiadomosc jest tylko przekazaniem podanych informacji podanych przez uzytkownika.</p>
+                                    <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">Ta wiadomosc jest tylko przekazaniem informacji podanych przez uzytkownika.</p>
                                     <p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px;">Prosze odpowiadac na podany mail przez wysylajacego.</p>
                                   </td>
                                 </tr>
@@ -268,7 +268,7 @@ window.addEventListener("load",function() {
         `;
         Email.send({
             SecureToken : "dc7492ef-00e4-4b05-baaf-cde9e521c4e3",
-            To : "automatycznymailelpim@o2.pl", // Replace with elpim company email later,
+            To : "yasha2yashaa@gmail.com", // Replace with elpim company email later,
             From : "automatycznymailelpim@o2.pl",
             Subject : "Mail od uzytkownika strony elpim.pl",
             Body : body_data

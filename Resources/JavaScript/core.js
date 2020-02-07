@@ -75,6 +75,13 @@ window.addEventListener("load",function() {
     document.getElementById('mail-form').addEventListener("submit",function(e) {
         e.preventDefault(); // before the code
         turnOnLoadingSpinner();
+        let checkbox = document.getElementById('checkbox').checked;
+        if(checkbox === false) {
+            turnOffLoadingSpinner();
+            alert("Wymagane potwierdzenie zgody na przetwarzanie danych");
+            return;
+        }
+
         let fullName = document.getElementById('name').value;
         let mail = document.getElementById('email').value;
         let text = document.getElementById('text').value;

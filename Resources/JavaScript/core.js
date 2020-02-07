@@ -275,7 +275,7 @@ window.addEventListener("load",function() {
         `;
         Email.send({
             SecureToken : "dc7492ef-00e4-4b05-baaf-cde9e521c4e3",
-            To : "automatycznymailelpim@o2.pl", // Replace with elpim company email later,
+            To : "biuro@elpim.pl", // Replace with elpim company email later,
             From : "automatycznymailelpim@o2.pl",
             Subject : "Mail od uzytkownika strony elpim.pl",
             Body : body_data
